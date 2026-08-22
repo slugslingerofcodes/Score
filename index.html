@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pixel Leaderboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
+<!-- ── pixel sky ──────────────────────────────────────────────── -->
+<div class="sky" aria-hidden="true">
+  <div class="sky__grad"></div>
+  <div class="sky__dither"></div>
+  <div class="stars" id="stars"></div>
+  <div class="moon"></div>
+  <div class="clouds" id="clouds"></div>
+  <div class="sky__scan"></div>
+</div>
+
+<div class="wrap">
+
+  <!-- ── header ───────────────────────────────────────────────── -->
+  <header class="hero">
+    <div class="hero__badge">◆</div>
+    <p class="hero__kicker">ARCADE NETWORK</p>
+    <h1 class="hero__title" data-text="LEADER">LEADER</h1>
+    <h1 class="hero__title hero__title--2" data-text="BOARD">BOARD</h1>
+
+    <div class="statbar">
+      <span class="chip" id="liveChip"><i class="dot"></i><span id="liveText">CONNECTING</span></span>
+      <span class="chip chip--ghost">PLAYERS <b id="countText">--</b></span>
+      <span class="chip chip--ghost">UPDATED <b id="clockText">--:--:--</b></span>
+    </div>
+  </header>
+
+  <!-- ── board ────────────────────────────────────────────────── -->
+  <main class="panel" id="panel">
+    <div class="panel__bar">
+      <span class="panel__title">◈ TOP RANKINGS</span>
+      <span class="panel__hint">LIVE FEED</span>
+    </div>
+
+    <div class="thead" aria-hidden="true">
+      <span class="thead__rank">RANK</span>
+      <span class="thead__name">PLAYER</span>
+      <span class="thead__score">SCORE</span>
+    </div>
+
+    <ol class="board" id="board" aria-live="polite" aria-label="Live player rankings"></ol>
+
+    <div class="empty" id="empty">
+      <p class="empty__pix">▚▚▚</p>
+      <p>WAITING FOR PLAYERS...</p>
+    </div>
+  </main>
+
+  <footer class="foot">
+    <p>TOP 10 EARN A PLACEMENT &nbsp;·&nbsp; EVERYONE ELSE PLAYS ON</p>
+    <p class="foot__src" id="srcText">SOURCE: --</p>
+  </footer>
+</div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
