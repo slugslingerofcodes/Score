@@ -1,0 +1,16 @@
+# Mirrors the "hosting.ignore" list in firebase.json so both hosts serve the
+# same set of files.
+#
+# IMPORTANT: game/ is deliberately absent from this list even though .gitignore
+# excludes it. The Unity Web build is generated, not committed, and Vercel falls
+# back to .gitignore when no .vercelignore exists -- without this file the deploy
+# would ship the page with no player behind it.
+
+.claude
+.firebase
+node_modules
+firebase.json
+database.rules.json
+serve.py
+unity
+*.md

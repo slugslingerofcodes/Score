@@ -5,7 +5,11 @@ rows physically slide past each other the moment a player overtakes another.
 
 - **Top 10** get a numbered placement (1-3 wear gold / silver / bronze).
 - **Everyone below** is listed as `--` / `UNRANKED`, separated by a cutoff line.
+- **Multiple games** feed one board: tab between a combined table and each game.
 - No build step, no dependencies — plain HTML/CSS/ES modules.
+
+Hooking up Unity games? See **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)** — it
+covers generating both configs, cross-game player identity, and rules.
 
 ## Run it
 
@@ -34,7 +38,9 @@ export const firebaseConfig = {
 };
 
 export const BACKEND = "firestore";  // or "rtdb"
-export const PLAYERS_PATH = "players";
+export const SCHEMA  = "multi-game"; // or "flat" for a single game
+export const PLAYERS_PATH = "scores";
+export const SCORE_MODE = "total";   // combined tab: "total" or "best"
 export const RANKED_COUNT = 10;      // how many get a number
 ```
 
@@ -42,37 +48,47 @@ The chip under the title turns green and reads **LIVE** once a snapshot lands.
 
 ### Data shape
 
-One record per player. The **document id (or RTDB key) is the player id** — keep
-it stable across updates so the row keeps its identity and animates instead of
-being torn down and rebuilt.
+**multi-game** — one record per (player, game). The doc id is
+`` `${playerId}__${gameId}` ``, so each game only ever writes its own row and
+three games can submit at once without clobbering each other:
 
-Firestore — collection `players`:
+```
+scores/u_7fa2__neon-runner = {
+  playerId: "u_7fa2", name: "PIXELPETE", gameId: "neon-runner", score: 48200
+}
+```
+
+Realtime Database nests instead — `scores/{playerId}/{gameId} = { name, score }`.
+
+**flat** — one record per player, for a single game:
 
 ```
 players/{playerId}  ->  { name: "PIXELPETE", score: 48200 }
 ```
 
-Realtime Database — node `players`:
-
-```json
-{
-  "players": {
-    "playerId": { "name": "PIXELPETE", "score": 48200 }
-  }
-}
-```
+`playerId` is what links a player across games, so every build must produce the
+same one for the same human — the common trip-up, covered in
+[FIREBASE_SETUP.md](FIREBASE_SETUP.md#4-make-the-player-the-same-player-in-all-three-games).
 
 `name` also accepts `player`, `username`, or `displayName`; `score` also accepts
-`points` or `value`. Sorting is done in the browser, so no Firestore composite
-index is needed.
+`points` or `value`. Grouping and sorting happen in the browser, so no Firestore
+composite index is needed and switching tabs costs no extra reads.
 
 ### Writing scores
 
-From your game/backend, write to the same path — the board updates itself:
+From Unity, use [unity/LeaderboardClient.cs](unity/LeaderboardClient.cs) — one
+call on game over:
+
+```csharp
+LeaderboardClient.Instance.SubmitScore(finalScore);
+```
+
+From JS, write to the same path — the board updates itself:
 
 ```js
 import { doc, setDoc } from "firebase/firestore";
-await setDoc(doc(db, "players", playerId), { name, score }, { merge: true });
+await setDoc(doc(db, "scores", `${playerId}__${gameId}`),
+             { playerId, name, gameId, score }, { merge: true });
 ```
 
 ### Read rules
@@ -91,11 +107,13 @@ match /players/{id} {
 
 | File | Role |
 | --- | --- |
-| [index.html](index.html) | Markup and the pixel sky scene |
+| [index.html](index.html) | Markup, game tabs, the pixel sky scene |
 | [styles.css](styles.css) | Theme, pixel borders, medals, animations |
-| [firebase-config.js](firebase-config.js) | Your keys + backend choice |
+| [firebase-config.js](firebase-config.js) | Your keys, backend, game list |
 | [data.js](data.js) | Firebase subscription, demo fallback |
-| [app.js](app.js) | Rendering, FLIP reordering, avatars |
+| [app.js](app.js) | Aggregation, rendering, FLIP reordering, avatars |
+| [unity/LeaderboardClient.cs](unity/LeaderboardClient.cs) | Drop-in Unity writer (same file in all games) |
+| [FIREBASE_SETUP.md](FIREBASE_SETUP.md) | Config generation, identity, rules |
 
 ## How the live movement works
 

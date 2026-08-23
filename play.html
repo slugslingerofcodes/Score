@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="description" content="Play the DevSoc Pre-Induction arcade in your browser: platformer, top-down and blackjack, with the live leaderboard beside you." />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Arcade — Pixel Leaderboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- The font stylesheet was 828ms of render-blocking. display=swap already
+     means text paints in a fallback and swaps, so loading it asynchronously
+     changes nothing visually and unblocks first paint. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" /></noscript>
+<link rel="stylesheet" href="./styles.css" />
+<link rel="stylesheet" href="./play.css" />
+</head>
+<body>
+
+<!-- ── pixel sky ──────────────────────────────────────────────── -->
+<div class="sky" aria-hidden="true">
+  <div class="sky__grad"></div>
+  <div class="sky__dither"></div>
+  <div class="stars" id="stars"></div>
+  <div class="moon"></div>
+  <div class="clouds" id="clouds"></div>
+  <div class="sky__scan"></div>
+</div>
+
+<div class="wrap wrap--wide">
+
+  <nav class="nav" aria-label="Sections">
+    <a class="nav__link" href="./index.html">LEADERBOARD</a>
+    <a class="nav__link is-on" href="./play.html" aria-current="page">ARCADE</a>
+  </nav>
+
+  <header class="hero hero--compact">
+    <p class="hero__kicker">INSERT COIN</p>
+    <h1 class="hero__title" data-text="ARCADE">ARCADE</h1>
+  </header>
+
+  <!-- ── touch devices never get here ─────────────────────────── -->
+  <section class="panel deskonly" id="desktopOnly" hidden>
+    <div class="panel__bar">
+      <span class="panel__title">◈ DESKTOP ONLY</span>
+    </div>
+    <div class="deskonly__body">
+      <p class="deskonly__pix">▚▚▚</p>
+      <p>THESE GAMES ARE KEYBOARD AND MOUSE.</p>
+      <p>THERE IS NO TOUCH CONTROL, SO THE PLAYER<br />IS NOT DOWNLOADED ON THIS DEVICE.</p>
+      <p class="deskonly__cta"><a class="cta" href="./index.html">VIEW THE LEADERBOARD</a></p>
+    </div>
+  </section>
+
+  <!-- ── the cabinet + the rail ───────────────────────────────── -->
+  <div class="arcade" id="arcade" hidden>
+
+    <main class="cabinet">
+      <div class="cabinet__bar">
+        <span class="panel__title" id="cabTitle">◈ SELECT A GAME</span>
+        <span class="cabinet__tools">
+          <button class="minibtn" id="fsBtn" type="button" hidden>FULLSCREEN</button>
+          <button class="minibtn" id="exitBtn" type="button" hidden>EXIT</button>
+        </span>
+      </div>
+
+      <div class="screen" id="screen">
+        <!-- the iframe is created here on PRESS START, and destroyed on EXIT -->
+
+        <div class="gate" id="gate">
+          <p class="gate__kicker">ENTER YOUR NAME</p>
+          <form class="gate__form" id="gateForm" autocomplete="off">
+            <input class="gate__input" id="nameInput" type="text"
+                   maxlength="16" spellcheck="false"
+                   aria-label="Player name" placeholder="PLAYER" />
+            <p class="gate__err" id="nameErr" hidden></p>
+            <button class="startbtn" id="startBtn" type="submit">PRESS START</button>
+          </form>
+          <p class="gate__note" id="gateNote">
+            THE PLAYER IS ONLY DOWNLOADED WHEN YOU START
+          </p>
+        </div>
+
+        <div class="loading" id="loading" hidden>
+          <p class="loading__label" id="loadingLabel">LOADING 0%</p>
+          <div class="bar"><div class="bar__fill" id="barFill"></div></div>
+          <p class="loading__hint">FIRST LOAD IS THE BIG ONE — IT CACHES AFTER THIS</p>
+        </div>
+
+        <div class="screen__err" id="screenErr" hidden></div>
+      </div>
+
+      <div class="cabinet__deck">
+        <span>◄►/WASD MOVE</span>
+        <span>MOUSE AIM</span>
+        <span>ESC RETURNS TO THE GAME HUB</span>
+      </div>
+    </main>
+
+    <aside class="rail">
+      <p class="rail__who">PLAYING AS <b id="railName">—</b></p>
+
+      <div class="panel">
+        <div class="panel__bar">
+          <span class="panel__title" id="railTitle">◈ TOP 5</span>
+          <span class="panel__hint" id="railHint">LIVE</span>
+        </div>
+        <ol class="miniboard" id="miniboard" aria-live="polite"></ol>
+        <p class="rail__empty" id="railEmpty">WAITING FOR PLAYERS…</p>
+      </div>
+
+      <!-- favourite-game poll, directly under the scoreboard -->
+      <section class="panel poll" id="poll">
+        <div class="panel__bar">
+          <span class="panel__title">◈ FAVOURITE GAME</span>
+          <span class="panel__hint" id="pollTotal">0 VOTES</span>
+        </div>
+        <div class="poll__body">
+          <p class="poll__ask" id="pollAsk">WHICH ONE DID YOU LIKE MOST?</p>
+          <div class="poll__options" id="pollOptions" role="group" aria-label="Vote for your favourite game"></div>
+          <p class="poll__note" id="pollNote"></p>
+        </div>
+      </section>
+
+      <p class="rail__foot">
+        <span class="chip chip--ghost" id="railSrc">SOURCE: —</span>
+      </p>
+    </aside>
+
+  </div>
+</div>
+
+<script type="module" src="./play.js"></script>
+</body>
+</html>

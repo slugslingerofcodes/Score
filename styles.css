@@ -204,6 +204,38 @@ body{
 .chip.is-error{color:var(--down)}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 
+/* == GAME TABS ================================================ */
+.tabs{
+  display:flex;gap:8px;flex-wrap:wrap;justify-content:center;
+  margin-bottom:18px;
+}
+.tabs[hidden]{display:none}
+
+.tab{
+  font-family:inherit;
+  font-size:9px;letter-spacing:.12em;
+  color:var(--fg-dim);
+  background:rgba(36,26,66,.82);
+  border:0;padding:11px 14px;
+  cursor:pointer;
+  box-shadow:
+    0 -4px 0 0 var(--ink-line), 0 4px 0 0 var(--ink-line),
+    -4px 0 0 0 var(--ink-line), 4px 0 0 0 var(--ink-line);
+  transition:color .15s steps(2), background .15s steps(2), transform .1s steps(2);
+}
+.tab:hover{color:var(--fg);background:var(--ink-3)}
+.tab:active{transform:translateY(3px)}
+.tab:focus-visible{outline:4px solid var(--neon);outline-offset:4px}
+
+.tab.is-on{
+  color:#2a1240;
+  background:linear-gradient(180deg,#ffd9a8,#ff9b6b);
+  box-shadow:
+    0 -4px 0 0 #ffe8c9, 0 4px 0 0 #c4603a,
+    -4px 0 0 0 #ffd0a0, 4px 0 0 0 #c4603a,
+    0 0 20px rgba(255,155,107,.35);
+}
+
 /* == PANEL ==================================================== */
 .panel{
   background:rgba(36,26,66,.9);
@@ -382,4 +414,35 @@ body{
 
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
+}
+
+/* == NAV (shared: index.html + play.html) ====================== */
+.nav{
+  display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
+  margin-bottom:26px;
+}
+
+.nav__link{
+  font-family:inherit;
+  font-size:9px;letter-spacing:.14em;
+  color:var(--fg-dim);
+  background:rgba(36,26,66,.82);
+  text-decoration:none;
+  padding:11px 16px;
+  box-shadow:
+    0 -4px 0 0 var(--ink-line), 0 4px 0 0 var(--ink-line),
+    -4px 0 0 0 var(--ink-line), 4px 0 0 0 var(--ink-line);
+  transition:color .15s steps(2), background .15s steps(2), transform .1s steps(2);
+}
+.nav__link:hover{color:var(--fg);background:var(--ink-3)}
+.nav__link:active{transform:translateY(3px)}
+.nav__link:focus-visible{outline:4px solid var(--neon);outline-offset:4px}
+
+.nav__link.is-on{
+  color:#2a1240;
+  background:linear-gradient(180deg,#b6f3ff,#7ee8fa);
+  box-shadow:
+    0 -4px 0 0 #d8faff, 0 4px 0 0 #3a9cb4,
+    -4px 0 0 0 #c2f5ff, 4px 0 0 0 #3a9cb4,
+    0 0 20px rgba(126,232,250,.35);
 }

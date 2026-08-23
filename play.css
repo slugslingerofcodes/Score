@@ -1,0 +1,338 @@
+/* ==============================================================
+   ARCADE PAGE — the cabinet, the gate and the live rail.
+   Tokens and the sky come from styles.css; this file only adds
+   what the leaderboard page has no use for.
+   ============================================================== */
+
+.wrap--wide{width:min(1240px,94vw)}
+
+.hero--compact{margin-bottom:28px}
+.hero--compact .hero__title{font-size:clamp(26px,5.2vw,46px)}
+
+/* == LAYOUT =================================================== */
+.arcade{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 300px;
+  gap:20px;
+  align-items:start;
+}
+.arcade[hidden]{display:none}
+
+@media (max-width:1000px){
+  .arcade{grid-template-columns:minmax(0,1fr)}
+}
+
+/* == CABINET ================================================== */
+.cabinet{
+  background:rgba(36,26,66,.9);
+  box-shadow:
+    0 -4px 0 0 var(--ink-line), 0 4px 0 0 var(--ink-line),
+    -4px 0 0 0 var(--ink-line), 4px 0 0 0 var(--ink-line),
+    0 16px 0 0 rgba(22,10,44,.35);
+}
+
+.cabinet__bar{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:14px 16px;
+  background:linear-gradient(90deg,#4a2a78,#8b3d94 60%,#c4508c);
+  box-shadow:0 4px 0 0 rgba(20,10,40,.45);
+}
+.cabinet__tools{display:flex;gap:8px}
+
+.minibtn{
+  font-family:inherit;font-size:8px;letter-spacing:.12em;
+  color:var(--fg-dim);background:rgba(24,14,48,.7);
+  border:0;padding:8px 10px;cursor:pointer;
+  box-shadow:
+    0 -3px 0 0 rgba(91,69,144,.9), 0 3px 0 0 rgba(91,69,144,.9),
+    -3px 0 0 0 rgba(91,69,144,.9), 3px 0 0 0 rgba(91,69,144,.9);
+  transition:color .15s steps(2), background .15s steps(2), transform .1s steps(2);
+}
+.minibtn:hover{color:var(--fg);background:var(--ink-3)}
+.minibtn:active{transform:translateY(2px)}
+.minibtn:focus-visible{outline:3px solid var(--neon);outline-offset:3px}
+.minibtn[hidden]{display:none}
+
+/* The screen keeps 16:9 so the layout never jumps when the frame
+   appears. The iframe fills it absolutely. */
+.screen{
+  position:relative;
+  aspect-ratio:16/9;
+  width:100%;
+  background:var(--ink);
+  overflow:hidden;
+  box-shadow:inset 0 0 0 4px rgba(18,8,38,.8);
+}
+
+.screen iframe{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  border:0;display:block;
+}
+
+/* Fullscreen / maximised.
+   Both states share these rules: `.is-maximized` pins the cabinet over the
+   whole page (which is what "cover the whole site" means and works even when
+   the browser refuses native fullscreen), and `:fullscreen` covers the display.
+
+   The control bar cannot take layout space or it eats the picture, and it
+   cannot auto-hide on hover either -- the iframe swallows mouse events, so a
+   hover-reveal would be unreachable exactly when the pointer is over the game.
+   It becomes a compact translucent cluster pinned top-right instead. */
+.cabinet.is-maximized,
+.cabinet:fullscreen{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:block;
+  width:100vw;
+  height:100vh;
+  background:#000;
+  box-shadow:none;
+}
+
+.cabinet.is-maximized .screen,
+.cabinet:fullscreen .screen{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  aspect-ratio:auto;        /* drop the 16:9 box; fill everything */
+  box-shadow:none;
+}
+
+.cabinet.is-maximized .cabinet__bar,
+.cabinet:fullscreen .cabinet__bar{
+  position:absolute;
+  top:0; right:0; left:auto;
+  z-index:2;
+  padding:8px 10px;
+  background:rgba(24,14,48,.72);
+  box-shadow:none;
+}
+.cabinet.is-maximized .panel__title,
+.cabinet:fullscreen .panel__title{ display:none; }   /* buttons only */
+
+.cabinet.is-maximized .cabinet__deck,
+.cabinet:fullscreen .cabinet__deck{ display:none; }
+
+.cabinet.is-maximized .gate,
+.cabinet.is-maximized .loading,
+.cabinet.is-maximized .screen__err,
+.cabinet:fullscreen .gate,
+.cabinet:fullscreen .loading,
+.cabinet:fullscreen .screen__err{ background:var(--ink); }
+
+.cabinet__deck{
+  display:flex;gap:18px;flex-wrap:wrap;justify-content:center;
+  padding:14px 16px;
+  font-size:8px;letter-spacing:.14em;color:var(--fg-mute);
+}
+
+/* == GATE (name + PRESS START) ================================ */
+.gate,
+.loading,
+.screen__err{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;
+  padding:24px;text-align:center;
+  background:
+    radial-gradient(120% 90% at 50% 40%, rgba(74,42,120,.55), rgba(36,26,66,.96));
+}
+.gate[hidden],
+.loading[hidden],
+.screen__err[hidden]{display:none}
+
+.gate__kicker{
+  font-size:10px;letter-spacing:.3em;color:#ffe6c9;
+  text-shadow:0 3px 0 rgba(60,20,70,.8);
+}
+
+.gate__form{display:flex;flex-direction:column;align-items:center;gap:14px}
+
+.gate__input{
+  font-family:inherit;font-size:14px;letter-spacing:.16em;
+  text-align:center;text-transform:uppercase;
+  color:var(--fg);
+  background:rgba(24,14,48,.85);
+  border:0;outline:0;
+  padding:14px 16px;width:min(280px,70vw);
+  box-shadow:
+    0 -4px 0 0 var(--ink-line), 0 4px 0 0 var(--ink-line),
+    -4px 0 0 0 var(--ink-line), 4px 0 0 0 var(--ink-line);
+}
+.gate__input::placeholder{color:var(--fg-mute)}
+.gate__input:focus{
+  box-shadow:
+    0 -4px 0 0 var(--neon), 0 4px 0 0 var(--neon),
+    -4px 0 0 0 var(--neon), 4px 0 0 0 var(--neon),
+    0 0 22px rgba(126,232,250,.3);
+}
+
+.gate__err{font-size:8px;letter-spacing:.14em;color:var(--down)}
+.gate__err[hidden]{display:none}
+
+.gate__note{font-size:8px;letter-spacing:.14em;color:var(--fg-mute);max-width:34ch}
+
+.startbtn{
+  font-family:inherit;font-size:11px;letter-spacing:.16em;
+  color:#2a1240;cursor:pointer;border:0;
+  padding:15px 24px;
+  background:linear-gradient(180deg,#ffd9a8,#ff9b6b);
+  box-shadow:
+    0 -4px 0 0 #ffe8c9, 0 4px 0 0 #c4603a,
+    -4px 0 0 0 #ffd0a0, 4px 0 0 0 #c4603a,
+    0 0 22px rgba(255,155,107,.35);
+  animation:blink 2.4s steps(2) infinite;
+}
+.startbtn:hover{filter:brightness(1.08);animation:none}
+.startbtn:active{transform:translateY(3px)}
+.startbtn:focus-visible{outline:4px solid var(--neon);outline-offset:4px}
+
+/* == LOADING ================================================== */
+.loading__label{font-size:11px;letter-spacing:.18em;color:var(--fg)}
+.loading__hint{font-size:8px;letter-spacing:.14em;color:var(--fg-mute);max-width:38ch}
+
+.bar{
+  width:min(340px,76%);height:20px;
+  background:rgba(24,14,48,.9);
+  box-shadow:
+    0 -4px 0 0 var(--ink-line), 0 4px 0 0 var(--ink-line),
+    -4px 0 0 0 var(--ink-line), 4px 0 0 0 var(--ink-line);
+}
+.bar__fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,var(--neon),var(--neon-2));
+  transition:width .2s steps(6);
+}
+
+.screen__err{color:var(--down);font-size:10px;letter-spacing:.14em;line-height:2}
+
+/* == RAIL ===================================================== */
+.rail{position:sticky;top:20px;display:grid;gap:12px}
+@media (max-width:1000px){.rail{position:static}}
+
+.rail__who{
+  font-size:9px;letter-spacing:.14em;color:var(--fg-mute);
+  text-align:center;
+}
+.rail__who b{color:var(--neon);font-weight:400}
+
+.miniboard{list-style:none;padding:8px;display:grid;gap:6px}
+
+.minirow{
+  display:grid;grid-template-columns:26px 1fr auto;
+  gap:10px;align-items:center;
+  padding:10px 8px;
+  font-size:9px;
+  background:var(--ink-2);
+  box-shadow:inset 0 -3px 0 0 rgba(18,8,38,.5), inset 0 3px 0 0 rgba(255,255,255,.05);
+}
+.minirow--1{background:linear-gradient(90deg,rgba(255,212,94,.24),var(--ink-3))}
+.minirow--2{background:linear-gradient(90deg,rgba(219,228,240,.18),var(--ink-3))}
+.minirow--3{background:linear-gradient(90deg,rgba(226,145,91,.2),var(--ink-3))}
+
+/* the player reading this page */
+.minirow--me{
+  box-shadow:
+    inset 0 -3px 0 0 rgba(18,8,38,.5),
+    inset 0 3px 0 0 rgba(126,232,250,.5),
+    0 0 16px rgba(126,232,250,.22);
+}
+.minirow--me .minirow__name{color:var(--neon)}
+
+.minirow__rank{color:var(--fg-mute);text-align:center}
+.minirow__name{
+  color:var(--fg);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.minirow__score{color:var(--fg-dim);text-align:right}
+
+.rail__empty{
+  padding:18px 12px;text-align:center;
+  font-size:8px;letter-spacing:.16em;color:var(--fg-mute);
+}
+.rail__empty[hidden]{display:none}
+
+.rail__foot{display:flex;justify-content:center}
+.rail__foot .chip{font-size:8px}
+
+/* == DESKTOP-ONLY CARD ======================================== */
+.deskonly[hidden]{display:none}
+.deskonly__body{
+  display:grid;gap:14px;justify-items:center;
+  padding:28px 20px 32px;text-align:center;
+  font-size:9px;letter-spacing:.14em;line-height:2;color:var(--fg-dim);
+}
+.deskonly__pix{font-size:18px;color:var(--neon-2);letter-spacing:.3em}
+.deskonly__cta{margin-top:8px}
+
+/* Shares the nav's "selected" look without pretending to be a nav link. */
+.cta{
+  display:inline-block;
+  font-size:9px;letter-spacing:.14em;
+  color:#2a1240;text-decoration:none;
+  padding:11px 16px;
+  background:linear-gradient(180deg,#b6f3ff,#7ee8fa);
+  box-shadow:
+    0 -4px 0 0 #d8faff, 0 4px 0 0 #3a9cb4,
+    -4px 0 0 0 #c2f5ff, 4px 0 0 0 #3a9cb4,
+    0 0 20px rgba(126,232,250,.35);
+}
+.cta:active{transform:translateY(3px)}
+.cta:focus-visible{outline:4px solid var(--neon);outline-offset:4px}
+
+/* == FAVOURITE-GAME POLL ====================================== */
+.poll__body{display:grid;gap:12px;padding:12px}
+
+.poll__ask{
+  font-size:8px;letter-spacing:.16em;color:var(--fg-mute);
+  text-align:center;line-height:1.8;
+}
+
+.poll__options{display:grid;gap:8px}
+
+/* Each option is a button whose background doubles as the result bar, so
+   voting and reading the result are the same widget rather than two. */
+.pollopt{
+  position:relative;
+  font-family:inherit;font-size:9px;letter-spacing:.1em;
+  color:var(--fg);
+  background:var(--ink-2);
+  border:0;padding:11px 10px;cursor:pointer;text-align:left;
+  display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;
+  box-shadow:inset 0 -3px 0 0 rgba(18,8,38,.5), inset 0 3px 0 0 rgba(255,255,255,.05);
+  overflow:hidden;
+  transition:color .15s steps(2), transform .1s steps(2);
+}
+.pollopt:hover{color:#fff}
+.pollopt:active{transform:translateY(2px)}
+.pollopt:focus-visible{outline:3px solid var(--neon);outline-offset:3px}
+.pollopt[disabled]{cursor:default}
+
+/* the fill sits behind the label */
+.pollopt__bar{
+  position:absolute;inset:0 auto 0 0;
+  width:0%;
+  background:linear-gradient(90deg,rgba(126,232,250,.30),rgba(178,141,255,.22));
+  transition:width .35s steps(8);
+  pointer-events:none;
+}
+.pollopt__label,
+.pollopt__count{position:relative;z-index:1}
+.pollopt__count{color:var(--fg-dim);font-size:8px}
+
+/* the option this player picked */
+.pollopt--mine{
+  box-shadow:
+    inset 0 -3px 0 0 rgba(18,8,38,.5),
+    inset 0 3px 0 0 rgba(126,232,250,.55),
+    0 0 16px rgba(126,232,250,.22);
+}
+.pollopt--mine .pollopt__label{color:var(--neon)}
+
+.poll__note{
+  font-size:8px;letter-spacing:.14em;color:var(--fg-mute);
+  text-align:center;min-height:1.4em;
+}

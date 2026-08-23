@@ -1,21 +1,28 @@
 // ==============================================================
 //  VIEW
-//  Renders the board and animates every position change (FLIP),
-//  so a player who overtakes another visibly slides past them.
+//  Groups per-game score entries into players, ranks them, and
+//  animates every position change (FLIP), so a player who overtakes
+//  another visibly slides past them.
 // ==============================================================
 
-import { subscribePlayers } from "./data.js";
-import { RANKED_COUNT } from "./firebase-config.js";
+import { buildSky } from "./sky.js";
+import { subscribePlayers, SOLO_GAME } from "./data.js";
+import {
+  RANKED_COUNT, GAMES, SCORE_MODE, SHOW_COMBINED, SCHEMA,
+} from "./firebase-config.js";
 
 const board    = document.getElementById("board");
 const emptyEl  = document.getElementById("empty");
+const tabsEl   = document.getElementById("tabs");
 const liveChip = document.getElementById("liveChip");
 const liveText = document.getElementById("liveText");
 const countText= document.getElementById("countText");
 const clockText= document.getElementById("clockText");
 const srcText  = document.getElementById("srcText");
+const modeText = document.getElementById("modeText");
 
 const MOVE_MS = 520;
+const ALL = "__all__";
 
 /** id -> <li> */
 const rows = new Map();
@@ -23,40 +30,95 @@ const rows = new Map();
 let prevRank = new Map();
 let firstPaint = true;
 
+/** last snapshot from Firebase, kept so tab switches need no re-read */
+let latestEntries = [];
+const multiGame = SCHEMA !== "flat" && GAMES.length > 0;
+let activeGame = multiGame && SHOW_COMBINED ? ALL : (GAMES[0]?.id ?? SOLO_GAME);
+
 /* The "top 10 cutoff" separator lives in the list so it animates too. */
 const cutoff = document.createElement("li");
 cutoff.className = "cutoff";
 cutoff.textContent = `TOP ${RANKED_COUNT} CUTOFF`;
 
-/* ── decor ───────────────────────────────────────────────────── */
-function buildSky() {
-  const stars = document.getElementById("stars");
-  const frag = document.createDocumentFragment();
-  for (let i = 0; i < 90; i++) {
-    const s = document.createElement("i");
-    s.className = "star" + (Math.random() < 0.18 ? " star--big" : "");
-    s.style.left = `${Math.random() * 100}%`;
-    // keep stars in the darker upper band of the sky
-    s.style.top = `${Math.random() * 62}%`;
-    s.style.animationDelay = `${Math.random() * 3.2}s`;
-    s.style.opacity = String(0.35 + Math.random() * 0.55);
-    frag.appendChild(s);
-  }
-  stars.appendChild(frag);
+/* ── game tabs ───────────────────────────────────────────────── */
+function buildTabs() {
+  if (!multiGame) { tabsEl.hidden = true; return; }
 
-  const clouds = document.getElementById("clouds");
-  for (let i = 0; i < 6; i++) {
-    const c = document.createElement("div");
-    c.className = "cloud";
-    const w = 40 + Math.random() * 46;
-    c.style.width = `${w}px`;
-    c.style.height = `${Math.round(w / 3.4)}px`;
-    c.style.top = `${12 + Math.random() * 58}%`;
-    c.style.animationDuration = `${58 + Math.random() * 70}s`;
-    c.style.animationDelay = `${-Math.random() * 90}s`;
-    c.style.opacity = String(0.45 + Math.random() * 0.5);
-    clouds.appendChild(c);
+  const tabs = [];
+  if (SHOW_COMBINED) tabs.push({ id: ALL, label: "ALL GAMES" });
+  GAMES.forEach((g) => tabs.push({ id: g.id, label: g.label || g.id }));
+
+  tabsEl.replaceChildren(
+    ...tabs.map((t) => {
+      const b = document.createElement("button");
+      b.className = "tab" + (t.id === activeGame ? " is-on" : "");
+      b.type = "button";
+      b.textContent = t.label;
+      b.dataset.game = t.id;
+      b.setAttribute("aria-pressed", String(t.id === activeGame));
+      b.addEventListener("click", () => selectGame(t.id));
+      return b;
+    })
+  );
+  updateModeLabel();
+}
+
+function selectGame(id) {
+  if (id === activeGame) return;
+  activeGame = id;
+
+  tabsEl.querySelectorAll(".tab").forEach((b) => {
+    const on = b.dataset.game === id;
+    b.classList.toggle("is-on", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+
+  // different table entirely — repaint fresh rather than animating across
+  rows.forEach((el) => el.remove());
+  rows.clear();
+  prevRank = new Map();
+  firstPaint = true;
+
+  updateModeLabel();
+  paint(latestEntries);
+}
+
+function updateModeLabel() {
+  if (!modeText) return;
+  if (!multiGame) { modeText.textContent = "SINGLE GAME"; return; }
+  modeText.textContent = activeGame === ALL
+    ? (SCORE_MODE === "best" ? "BEST GAME SCORE" : "TOTAL OF ALL GAMES")
+    : (GAMES.find((g) => g.id === activeGame)?.label || activeGame);
+}
+
+/* ── entries -> ranked players ───────────────────────────────── */
+function aggregate(entries) {
+  const byPlayer = new Map();
+
+  for (const e of entries) {
+    if (activeGame !== ALL && e.gameId !== activeGame) continue;
+
+    let p = byPlayer.get(e.playerId);
+    if (!p) {
+      p = { id: e.playerId, name: e.name, score: 0, perGame: new Map() };
+      byPlayer.set(e.playerId, p);
+    }
+    if (e.name) p.name = e.name;
+    // keep the highest if a game somehow reports twice
+    const prev = p.perGame.get(e.gameId) ?? -Infinity;
+    p.perGame.set(e.gameId, Math.max(prev, e.score));
   }
+
+  for (const p of byPlayer.values()) {
+    const vals = [...p.perGame.values()];
+    p.gameCount = vals.length;
+    p.score =
+      activeGame !== ALL   ? (vals[0] ?? 0)
+      : SCORE_MODE === "best" ? Math.max(0, ...vals)
+      :                          vals.reduce((a, b) => a + b, 0);
+  }
+
+  return [...byPlayer.values()];
 }
 
 /* ── pixel avatar: deterministic 8x8 symmetric sprite ────────── */
@@ -143,9 +205,10 @@ function updateRow(li, player, index) {
   const nameEl = li.querySelector(".who__name");
   if (nameEl.textContent !== player.name) nameEl.textContent = player.name;
 
-  const tag = rank === 1 ? "CHAMPION"
-            : ranked     ? `PLACED #${rank}`
-            :              "UNRANKED";
+  let tag = rank === 1 ? "CHAMPION" : ranked ? `PLACED #${rank}` : "UNRANKED";
+  if (activeGame === ALL && multiGame) {
+    tag += ` / ${player.gameCount} GAME${player.gameCount === 1 ? "" : "S"}`;
+  }
   const tagEl = li.querySelector(".who__tag");
   if (tagEl.textContent !== tag) tagEl.textContent = tag;
 
@@ -182,8 +245,13 @@ function tweenScore(el, from, to) {
 }
 
 /* ── render + FLIP ───────────────────────────────────────────── */
-function render(players) {
-  const sorted = [...players].sort(
+function onEntries(entries) {
+  latestEntries = entries;
+  paint(entries);
+}
+
+function paint(entries) {
+  const sorted = aggregate(entries).sort(
     (a, b) => b.score - a.score || a.name.localeCompare(b.name)
   );
 
@@ -288,7 +356,9 @@ function setStatus({ mode, label, detail }) {
 
 /* ── boot ────────────────────────────────────────────────────── */
 buildSky();
-subscribePlayers(render, setStatus).catch((err) => {
+buildTabs();
+updateModeLabel();
+subscribePlayers(onEntries, setStatus).catch((err) => {
   console.error("[leaderboard] fatal:", err);
   setStatus({ mode: "error", label: "FAILED", detail: "SEE CONSOLE" });
 });

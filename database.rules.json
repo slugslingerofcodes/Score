@@ -1,0 +1,34 @@
+{
+  "rules": {
+    "scores": {
+      ".read": true,
+      "$playerId": {
+        "$gameId": {
+          ".write": "!data.exists() || newData.child('score').val() > data.child('score').val()",
+          ".validate": "newData.hasChildren(['name', 'score'])",
+          "score": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50000"
+          },
+          "name": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 16"
+          },
+          "updatedAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    ".read": false,
+    ".write": false,
+    "poll": {
+      ".read": true,
+      "$playerId": {
+        ".write": true,
+        ".validate": "newData.isString() && (newData.val() === 'platformer' || newData.val() === 'topdown' || newData.val() === 'blackjack')"
+      }
+    }
+  }
+}

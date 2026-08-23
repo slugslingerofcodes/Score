@@ -1,0 +1,12 @@
+# Unity Web build output -- all of it is generated, tens of MB per rebuild.
+# Deploy it from the machine that has Unity rather than committing it.
+game/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Deploy tooling state -- machine-local, not part of the site.
+.firebase/
+.vercel/

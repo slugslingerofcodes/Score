@@ -1,0 +1,102 @@
+{
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      ".claude/**",
+      "**/.claude/**",
+      ".git/**",
+      "**/.git/**",
+      "firebase.json",
+      "database.rules.json",
+      ".firebase/**",
+      "serve.py",
+      "unity/**",
+      "*.md",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "//": "INERT ON FIREBASE. Firebase Hosting runs its own transport compression and overrides Content-Encoding on pre-compressed files -- it served framework.js.br with no encoding at all and data.br as gzip, which fed Unity raw brotli as JS. That is why webGLDecompressionFallback is ON: Unity decompresses in JS and Firebase's compression becomes harmless. These rules only matter on a host that leaves pre-compressed files alone, e.g. serve.py.",
+        "source": "**/*.br",
+        "headers": [
+          {
+            "key": "Content-Encoding",
+            "value": "br"
+          }
+        ]
+      },
+      {
+        "source": "**/*.gz",
+        "headers": [
+          {
+            "key": "Content-Encoding",
+            "value": "gzip"
+          }
+        ],
+        "//": "INERT ON FIREBASE. Firebase Hosting runs its own transport compression and overrides Content-Encoding on pre-compressed files -- it served framework.js.br with no encoding at all and data.br as gzip, which fed Unity raw brotli as JS. That is why webGLDecompressionFallback is ON: Unity decompresses in JS and Firebase's compression becomes harmless. These rules only matter on a host that leaves pre-compressed files alone, e.g. serve.py."
+      },
+      {
+        "//": "Content-Type must describe the file INSIDE the compression, not the .br wrapper.",
+        "source": "**/*.wasm.br",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/wasm"
+          }
+        ]
+      },
+      {
+        "source": "**/*.js.br",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/javascript"
+          }
+        ]
+      },
+      {
+        "source": "**/*.data.br",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/octet-stream"
+          }
+        ]
+      },
+      {
+        "//": "Build files are hash-named (webGLNameFilesAsHashes), so immutable is safe. This glob must NOT overlap the no-cache rules below -- precedence between overlapping header globs is not something to rely on.",
+        "source": "game/Build/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "//": "Site source lives at the root only; this pattern deliberately does not recurse into game/Build.",
+        "source": "/*.@(html|js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "//": "Regenerated every build and points at the hashed files, so it must never be cached.",
+        "source": "/game/index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
+    ]
+  }
+}

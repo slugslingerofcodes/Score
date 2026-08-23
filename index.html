@@ -2,11 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+<meta name="description" content="Live pixel-art leaderboard for the DevSoc Pre-Induction arcade: platformer, top-down and blackjack scores, updating in real time." />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Pixel Leaderboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+<!-- The font stylesheet was 828ms of render-blocking. display=swap already
+     means text paints in a fallback and swaps, so loading it asynchronously
+     changes nothing visually and unblocks first paint. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" /></noscript>
 <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -23,6 +29,11 @@
 
 <div class="wrap">
 
+  <nav class="nav" aria-label="Sections">
+    <a class="nav__link is-on" href="./index.html" aria-current="page">LEADERBOARD</a>
+    <a class="nav__link" href="./play.html">ARCADE</a>
+  </nav>
+
   <!-- ── header ───────────────────────────────────────────────── -->
   <header class="hero">
     <div class="hero__badge">◆</div>
@@ -37,11 +48,14 @@
     </div>
   </header>
 
+  <!-- ── game tabs ────────────────────────────────────────────── -->
+  <nav class="tabs" id="tabs" aria-label="Filter by game"></nav>
+
   <!-- ── board ────────────────────────────────────────────────── -->
   <main class="panel" id="panel">
     <div class="panel__bar">
       <span class="panel__title">◈ TOP RANKINGS</span>
-      <span class="panel__hint">LIVE FEED</span>
+      <span class="panel__hint" id="modeText">LIVE FEED</span>
     </div>
 
     <div class="thead" aria-hidden="true">
