@@ -5,6 +5,11 @@
 # excludes it. The Unity Web build is generated, not committed, and Vercel falls
 # back to .gitignore when no .vercelignore exists -- without this file the deploy
 # would ship the page with no player behind it.
+#
+# Related: vercel.json sets git.deploymentEnabled=false. A deployment built from
+# the git repo cannot contain game/ at all, so it serves play.html with no player
+# and 404s every /game/ path. Ship with `vercel deploy --prod` from the machine
+# that has Unity, the same way Firebase Hosting is deployed.
 
 .claude
 .firebase

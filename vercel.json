@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "//": "Automatic git deployments are DISABLED on purpose. The Unity Web build in game/ is generated, ~20MB per rebuild, and is gitignored -- so a deployment built from this repo has no player behind play.html and every /game/ path 404s. That is exactly what happened once. Ship with `vercel deploy --prod` from the machine that has Unity, the same way Firebase Hosting is deployed.",
   "git": {
     "deploymentEnabled": false
   }
