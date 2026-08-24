@@ -1,0 +1,50 @@
+# Site-only changes still need a full deploy, because a deployment must carry
+# the Unity player and `game/` is deliberately not in this repo (it is
+# generated, ~14MB, and rebuilt every time). Vercel's own git integration is
+# switched off in vercel.json for the same reason: a deployment built from
+# this repo alone serves play.html with nothing behind it.
+#
+# So this does not deploy. It asks the game repo -- which has the player and
+# the build pipeline -- to rebuild and deploy both halves together. Its Unity
+# Library is cached, so when only the site changed the rebuild is cheap.
+
+name: Redeploy site
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+  workflow_dispatch:
+
+jobs:
+  request-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # The game repo is private, so this needs a PAT with repo scope; the
+      # automatic GITHUB_TOKEN cannot reach across repositories. Skip with a
+      # notice rather than failing red, so a missing secret does not look like
+      # a broken site.
+      - name: Ask the game repo to build and deploy
+        env:
+          TOKEN: ${{ secrets.GAME_REPO_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::notice::GAME_REPO_DISPATCH_TOKEN is not set, so this push did not deploy."
+            echo "::notice::Add it, or run 'Build and deploy' in slugslingerofcodes/Preinduction-Game-2026 by hand."
+            exit 0
+          fi
+
+          code=$(curl -sS -o /tmp/resp.txt -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/slugslingerofcodes/Preinduction-Game-2026/dispatches \
+            -d '{"event_type":"site-changed"}')
+
+          if [ "$code" = "204" ]; then
+            echo "Requested a build and deploy from the game repo."
+          else
+            echo "Dispatch failed with HTTP $code:"; cat /tmp/resp.txt
+            exit 1
+          fi
