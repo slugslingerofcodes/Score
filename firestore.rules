@@ -1,0 +1,57 @@
+rules_version = '2';
+
+// Scores moved from Realtime Database to Firestore when the current Unity
+// build started writing them itself, and the protections did not come with
+// them. database.rules.json has enforced best-score-only, a score ceiling and
+// a field whitelist for RTDB all along; Firestore had none of it, which was
+// demonstrable in production:
+//
+//   PATCH totalScore 5000 -> 200      then 10 -> 200, and the board showed 10
+//   PATCH totalScore 999999999 for a player who does not exist -> 200
+//
+// These rules restore the RTDB guarantees for the collection the deployed
+// build actually writes to.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /leaderboard/{playerId} {
+      // The board is public and reads with no sign-in.
+      allow read: if true;
+
+      allow create: if isValidEntry(request.resource.data);
+
+      // Best score wins. A later, worse run must not erase a better one --
+      // the same guarantee as
+      // database.rules.json's `newData.child('score') > data.child('score')`.
+      // A rejected write surfaces in the player as
+      // "[Leaderboard] REST API Error", which is the intended outcome, not a
+      // failure to investigate.
+      allow update: if isValidEntry(request.resource.data)
+                    && request.resource.data.totalScore > resource.data.totalScore;
+
+      // Deletes were already refused (403) before these rules existed, so this
+      // changes nothing. Clearing the board stays an admin action:
+      //   firebase firestore:delete leaderboard/<id> --account <owner>
+      allow delete: if false;
+    }
+  }
+}
+
+function isValidEntry(d) {
+  // The build writes exactly these two fields and nothing else:
+  //   {"fields": {"username": {"stringValue": ...},
+  //               "totalScore": {"integerValue": ...}}}
+  return d.keys().hasOnly(['username', 'totalScore'])
+      && d.totalScore is int
+      && d.totalScore >= 0
+      // Deliberately loose. The point is to make 999999999 impossible, not to
+      // police gameplay: the realistic ceiling is roughly 8000 (platformer
+      // ~2400 + top-down ~3600 + blackjack ~2000), so this leaves better than
+      // 10x headroom. Raise it rather than let it silently reject a real
+      // player -- especially if totalScore turns out to accumulate across
+      // sessions rather than being a per-run best.
+      && d.totalScore <= 100000
+      && d.username is string
+      && d.username.size() > 0
+      && d.username.size() <= 16;
+}
