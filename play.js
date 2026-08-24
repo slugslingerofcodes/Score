@@ -15,8 +15,9 @@ import { GAMES } from "./firebase-config.js";
 
 const FRAME_SRC  = "./game/index.html";
 const RAIL_COUNT = 5;
-const ID_KEY     = "arcade.playerId";
+const ID_KEY     = "arcade.playerId";   // legacy random id, cleared on save
 const NAME_KEY   = "arcade.playerName";
+const ANON_KEY   = "arcade.anonId";     // only for voting without a name
 
 const $ = (id) => document.getElementById(id);
 
@@ -55,36 +56,75 @@ let entries = [];
 /* ── identity ────────────────────────────────────────────────────
    Name entry lives here rather than in a Unity TMP_InputField:
    text input in WebGL is awkward (IME, focus theft) and the page
-   already has a real one. The id is what links a player across all
-   three games, so it is minted once and kept.
+   already has a real one.
+
+   The id is DERIVED FROM THE NAME, never minted randomly. Type the same
+   name again -- on another device, in private mode, after clearing storage
+   -- and you land on the same id, so your progress is still there. It used
+   to carry a Math.random() suffix and live or die with localStorage, which
+   is how one person called SASHANK ended up as four separate rows.
+
+   The trade: two people who type the same name share a row. Without
+   accounts they are genuinely indistinguishable, and picking your progress
+   back up matters more here than defending against a name clash.
 ------------------------------------------------------------------ */
 function loadIdentity() {
   try {
-    return {
-      id: localStorage.getItem(ID_KEY) || "",
-      name: localStorage.getItem(NAME_KEY) || "",
-    };
+    // Deliberately does not read a stored id. Older builds saved a random
+    // one, and reading it back would keep those players pinned to the id
+    // they were stranded on. The name is the only thing worth remembering.
+    const name = localStorage.getItem(NAME_KEY) || "";
+    return { name, id: name ? idForName(name) : "" };
   } catch {
     return { id: "", name: "" }; // private mode / storage disabled
   }
 }
 
 function saveIdentity(name) {
-  const current = loadIdentity();
-  const id = current.id || mintId(name);
+  const id = idForName(name);
   try {
-    localStorage.setItem(ID_KEY, id);
     localStorage.setItem(NAME_KEY, name);
+    localStorage.removeItem(ID_KEY); // clear the old random id if one is left
   } catch {
-    /* not fatal — the run just won't be recognised next visit */
+    /* not fatal — the id is rebuilt from the name anyway */
   }
   return { id, name };
 }
 
-function mintId(name) {
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 10);
-  const rand = Math.random().toString(36).slice(2, 6);
-  return `${slug || "player"}_${rand}`;
+// Same cleaned name in, same id out, always. Runs the name through
+// cleanName first so "sashank", "SASHANK" and "  Sashank  " agree.
+function idForName(name) {
+  const clean = cleanName(name);
+  const slug = clean.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  // A name of only punctuation slugs to nothing; hash it so those players
+  // still get a stable id each instead of all colliding on "player".
+  return slug || `player${hash36(clean)}`;
+}
+
+// Only for visitors who vote without entering a name. Random, but kept, so
+// one anonymous person stays one vote instead of a fresh one every reload.
+function anonId() {
+  const mint = () => `anon_${Math.random().toString(36).slice(2, 8)}`;
+  try {
+    let id = localStorage.getItem(ANON_KEY);
+    if (!id) {
+      id = mint();
+      localStorage.setItem(ANON_KEY, id);
+    }
+    return id;
+  } catch {
+    return mint(); // private mode: one vote per page load is the best on offer
+  }
+}
+
+// FNV-1a. Not for security -- just a short stable string from a name.
+function hash36(text) {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(36);
 }
 
 function cleanName(raw) {
@@ -483,7 +523,12 @@ async function vote(gameId) {
   // mint one here, seeded from the name field if they have typed one.
   let me = loadIdentity();
   if (!me.id) {
-    me = saveIdentity(cleanName(nameInput.value) || "ANON");
+    const typed = cleanName(nameInput.value);
+    // Someone who typed a name gets their real, name-derived id. Someone who
+    // typed nothing has no name to derive one from, so they get a random id
+    // kept in this browser. Deriving "ANON" for them would put every
+    // anonymous voter on the site on one id, overwriting each other's votes.
+    me = typed ? saveIdentity(typed) : { id: anonId(), name: "ANON" };
     railName.textContent = me.name;
   }
 
