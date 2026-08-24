@@ -8,6 +8,7 @@ loader dies. This sets the encoding and the real MIME type for .br/.gz files.
     python serve.py [port]
 """
 import http.server
+import re
 import sys
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 5180
@@ -45,8 +46,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # else is source you are actively editing -- caching it means a stale
         # ES module silently shadows your change, which looks like a bug in
         # the code rather than in the browser.
+        # `immutable` is only safe when the filename carries a content hash
+        # (webGLNameFilesAsHashes). A build named two.data / two.wasm reuses
+        # the same URL every time, so pinning it for a year would leave this
+        # browser on a stale player until someone cleared their cache by hand.
         if "/Build/" in path:
-            self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+            hashed = re.search(r"/[0-9a-f]{32}\.", path) is not None
+            self.send_header(
+                "Cache-Control",
+                "public, max-age=31536000, immutable" if hashed
+                else "public, max-age=0, must-revalidate",
+            )
         else:
             self.send_header("Cache-Control", "no-store, must-revalidate")
         super().end_headers()

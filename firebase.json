@@ -68,12 +68,12 @@
         ]
       },
       {
-        "//": "Build files are hash-named (webGLNameFilesAsHashes), so immutable is safe. This glob must NOT overlap the no-cache rules below -- precedence between overlapping header globs is not something to rely on.",
+        "//": "Revalidating, NOT immutable. immutable is only safe while filenames carry a content hash (webGLNameFilesAsHashes); the build currently deployed uses fixed names (two.data, two.wasm), so a year-long pin would strand visitors on a stale player. Restore max-age=31536000, immutable once hashed builds are back. This glob must NOT overlap the no-cache rules below -- precedence between overlapping header globs is not something to rely on.",
         "source": "game/Build/**",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "public, max-age=31536000, immutable"
+            "value": "public, max-age=0, must-revalidate"
           }
         ]
       },
