@@ -33,7 +33,14 @@ let firstPaint = true;
 /** last snapshot from Firebase, kept so tab switches need no re-read */
 let latestEntries = [];
 const multiGame = SCHEMA !== "flat" && GAMES.length > 0;
-let activeGame = multiGame && SHOW_COMBINED ? ALL : (GAMES[0]?.id ?? SOLO_GAME);
+// A flat board has exactly one bucket, SOLO_GAME, whatever GAMES says --
+// GAMES describes the cabinet, not the shape of the data. The old
+// `GAMES[0]?.id ?? SOLO_GAME` only reached SOLO_GAME when GAMES was empty,
+// so a flat schema alongside the usual three games selected "platformer"
+// and filtered every row out: a full board that renders as empty.
+let activeGame = !multiGame
+  ? SOLO_GAME
+  : (SHOW_COMBINED ? ALL : GAMES[0].id);
 
 /* The "top 10 cutoff" separator lives in the list so it animates too. */
 const cutoff = document.createElement("li");

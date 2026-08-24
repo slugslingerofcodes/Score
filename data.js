@@ -291,7 +291,10 @@ const pickName = (rec, fallback) =>
   String(rec.name ?? rec.player ?? rec.username ?? rec.displayName ?? fallback);
 
 function pickScore(rec) {
-  const raw = rec?.score ?? rec?.points ?? rec?.value ?? 0;
+  // totalScore is what the deployed Unity build writes; the rest are the
+  // shapes earlier/other builds have used. pickName already covers its
+  // matching "username" field.
+  const raw = rec?.score ?? rec?.totalScore ?? rec?.points ?? rec?.value ?? 0;
   const n = Number(raw);
   return Number.isFinite(n) ? n : 0;
 }
