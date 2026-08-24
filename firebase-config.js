@@ -23,38 +23,37 @@ export const firebaseConfig = {
   databaseURL:       "https://preinduction-858b9-default-rtdb.asia-southeast1.firebasedatabase.app",
 };
 
-// These three follow WHERE THE DEPLOYED PLAYER WRITES. They are not a
-// preference -- get them wrong and the board reads an empty node while the
-// game happily fills a different one.
+// These three follow WHERE THE PLAYER ACTUALLY WRITES. Get them wrong and the
+// board reads an empty node while the game fills a different one -- which is
+// exactly what happened while these pointed at Firestore.
 //
-// The current build writes to Firestore itself, from C#
-// (Assets/Scripts/Firebase/WebGLFirestoreLeaderboard.cs), by REST:
+// The build ships two leaderboards and only one of them runs:
 //
-//   POST firestore.googleapis.com/v1/projects/preinduction-858b9
-//        /databases/(default)/documents/leaderboard
-//   { "username": <string>, "totalScore": <integer> }
+//   WebGLFirestoreLeaderboard (upstream, Firestore REST) is DEAD CODE.
+//   Nothing calls SubmitScore and the component is on no GameObject in any
+//   scene, so it has never written a row. That is why the Firestore
+//   `leaderboard` collection stayed empty through every build.
 //
-// It does NOT use the ArcadeBridge/postMessage path, so the page never sees
-// a run-end event and submitScore() below is dormant for this build -- the
-// board is a pure reader. Restore rtdb + multi-game + "scores" if a build
-// with the bridge is deployed again.
+//   RunSession -> Leaderboard.Submit -> ArcadeBridge -> postMessage -> this
+//   page is the live path, and it is per-game.
+//
+// So: Realtime Database, multi-game, `scores`. That is also the only schema
+// database.rules.json protects -- best-score-only writes, score and name
+// validation -- and it is what submitScore() below emits.
 
 // Which Firebase product holds the scores:
 //   "firestore" -> collection of documents
 //   "rtdb"      -> Realtime Database node
-export const BACKEND = "firestore";
+export const BACKEND = "rtdb";
 
 // ── Schema ────────────────────────────────────────────────────
 //   "multi-game" -> one record per (player, game); the board can show
 //                   a combined table or filter to a single game.
 //   "flat"       -> one record per player, single score.
-// The build writes one total per player and no gameId, so "flat" is the only
-// honest reading -- per-game tabs would be inventing a split that is not
-// in the data.
-export const SCHEMA = "flat";
+export const SCHEMA = "multi-game";
 
 // Firestore collection name, or RTDB path.
-export const PLAYERS_PATH = "leaderboard";
+export const PLAYERS_PATH = "scores";
 
 // ── Your games ────────────────────────────────────────────────
 // `id` must match the gameId each Unity build writes. `label` is the
